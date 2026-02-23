@@ -1,10 +1,10 @@
-# 📘 Detection Engineering Maturity Assessment Workbook
+# Detection Engineering Maturity Assessment Workbook
 
 **Version 1.0 – Enterprise Evaluation Edition**
 
 ---
 
-## 📌 Purpose
+## Purpose
 
 This workbook helps evaluate the maturity of a SOC’s Detection Engineering capability across:
 
@@ -18,7 +18,7 @@ This workbook helps evaluate the maturity of a SOC’s Detection Engineering cap
 
 ---
 
-# 🧠 How to Use This Workbook
+# How to Use This Workbook
 
 For each question:
 
@@ -37,7 +37,7 @@ Track your score per section and calculate total maturity.
 
 ---
 
-# SECTION 1️⃣ — Detection Strategy & Governance
+# SECTION 1️— Detection Strategy & Governance
 
 ### 1.1 Detection Ownership
 
@@ -80,7 +80,7 @@ Score: ___ / 5
 
 ---
 
-# SECTION 2️⃣ — MITRE & Coverage Alignment
+# SECTION 2️— MITRE & Coverage Alignment
 
 ### 2.1 ATT&CK Mapping
 
@@ -122,7 +122,7 @@ Score: ___ / 5
 
 ---
 
-# SECTION 3️⃣ — Detection Quality & Tuning
+# SECTION 3️— Detection Quality & Tuning
 
 ### 3.1 False Positive Management
 
@@ -164,7 +164,7 @@ Score: ___ / 5
 
 ---
 
-# SECTION 4️⃣ — Validation & Testing
+# SECTION 4️— Validation & Testing
 
 ### 4.1 Detection Testing
 
@@ -206,7 +206,7 @@ Score: ___ / 5
 
 ---
 
-# SECTION 5️⃣ — Automation & Engineering Practices
+# SECTION 5️ — Automation & Engineering Practices
 
 ### 5.1 Detection-as-Code
 
