@@ -1,351 +1,286 @@
 # Modern SOC Blueprint
 
----
+**Document Type:** Method of Procedure (MOP)
 
-# 1. Security Operations Vision
+**Prepared By:** Rajneesh Gupta
 
-A Security Operations Center (SOC) exists to **detect, investigate, and respond to security threats before they impact the business**.
+**Organization:** HaxSecurity.com
 
-A modern SOC focuses on:
-
-- Continuous monitoring
-
-• Rapid threat detection
-
-• Efficient investigation
-
-• Automated response
-
-• Continuous improvement
-
-The SOC should operate **24/7 or near real-time monitoring** depending on business risk.
-
-Core objectives:
-
-- Reduce Mean Time To Detect (MTTD)
-- Reduce Mean Time To Respond (MTTR)
-- Increase detection coverage
-- Reduce false positives
+**Version:** 1.1
 
 ---
 
-# 2. SOC Operating Model
+## Introduction
 
-A SOC must define **how it will operate day-to-day**.
+This document outlines a practical blueprint for designing and implementing a **modern Security Operations Center (SOC)**. The goal is to provide a structured approach to building SOC capabilities that focus on **visibility, detection engineering, automation, and effective incident response**.
 
-Common operating models:
-
-### Internal SOC
-
-Built and operated completely inside the organization.
-
-Pros
-
-- Full visibility
-- Better control
-
-Cons
-
-- Expensive
-- Requires skilled staff
-
-### Managed SOC (MSSP)
-
-Security monitoring outsourced to external provider.
-
-Pros
-
-- Lower operational burden
-
-Cons
-
-- Less internal control
-
-### Hybrid SOC
-
-Internal analysts + external monitoring provider.
-
-This model is becoming the **most common modern SOC structure**.
+Many organizations deploy multiple security tools but lack a clear operational framework to integrate them effectively. This blueprint addresses that challenge by defining a **practical SOC architecture, operational workflows, and detection strategies** aligned with modern threat landscapes.
 
 ---
 
-# 3. Security Framework Alignment
+## Objective
 
-Before deploying tools, align the SOC with **security frameworks**.
+The objective of this document is to provide a **clear and actionable framework** for building or improving a Security Operations Center. The focus is on enabling security teams to:
 
-Recommended frameworks:
+- Establish centralized security monitoring
+- Implement detection capabilities mapped to adversary techniques
+- Integrate threat intelligence and automation
+- Improve incident detection and response efficiency
 
-**NIST Cybersecurity Framework**
-
-Functions:
-
-- Identify
-- Protect
-- Detect
-- Respond
-- Recover
-
-**MITRE ATT&CK**
-
-Used for:
-
-- detection coverage
-- adversary techniques
-- threat modeling
-
-**CIS Critical Security Controls**
-
-Used for operational security practices.
-
-A modern SOC should map **detections to MITRE ATT&CK techniques**.
-
-Example:
-
-| Detection | MITRE Technique |
-| --- | --- |
-| PowerShell abuse | T1059 |
-| Credential dumping | T1003 |
-| Lateral movement SMB | T1021 |
+This blueprint is intended to support organizations in developing a **detection-driven SOC capable of monitoring modern enterprise environments including endpoints, networks, cloud infrastructure, and identity systems.**
 
 ---
 
-# 4. SOC Architecture Overview
+## Scope
 
-A modern SOC typically has **six architectural layers**.
+This document covers key components required for a modern SOC, including:
+
+- SOC architecture design
+- Log and telemetry collection
+- SIEM implementation
+- Detection engineering practices
+- Automation and response workflows
+
+The guidance provided is **vendor-neutral** and can be adapted using either open-source or enterprise security technologies.
+
+---
+
+## Author Note
+
+This blueprint reflects operational practices and architectural approaches used in **real-world SOC environments and blue team training programs developed at HaxSecurity**. The intent is to provide a practical reference that security teams can use when designing or maturing their SOC capabilities.
+
+# Modern SOC Architecture (Practical Blueprint)
+
+## Core Operational Flow
 
 ```
-Data Sources
-     ↓
-Log Pipeline
-     ↓
-SIEM Platform
-     ↓
-Detection Engineering
-     ↓
-Automation / SOAR
-     ↓
-Threat Intelligence
+Endpoints / Network / Cloud / Identity
+              ↓
+         Log Collectors
+   (Agents / Syslog / APIs)
+              ↓
+        Log Pipeline Layer
+  (Parsing, Normalization, Enrichment)
+              ↓
+              SIEM
+   (Correlation, Dashboards, Alerts)
+              ↓
+       Detection Engineering
+    (ATT&CK mapped detections)
+              ↓
+       SOAR / Automation
+   (Response playbooks & actions)
+              ↓
+        Incident Response
+   (Investigation & containment)
 ```
 
-Each layer plays a critical role.
-
-Without proper architecture, SOC operations become **alert chaos**.
+Each layer has **clear operational responsibilities**.
 
 ---
 
-# 5. Asset Visibility
+# 1. Visibility Layer (Telemetry Collection)
 
-You cannot defend what you cannot see.
+The SOC starts with **collecting security telemetry from critical infrastructure**.
 
-SOC must maintain an **accurate asset inventory**.
+## Endpoint Telemetry
 
-Assets include:
+Recommended tools
 
-- servers
-- laptops
-- cloud workloads
-- containers
-- network devices
-- SaaS applications
+- Wazuh
 
-Key tools:
+[https://wazuh.com](https://wazuh.com/)
 
-- asset management platforms
-- CMDB
-- cloud asset discovery
-- vulnerability scanners
+- Microsoft Defender for Endpoint
 
-Asset tagging should include:
+https://learn.microsoft.com/en-us/microsoft-365/security/defender-endpoint/
 
-- asset owner
-- environment
-- criticality
-- internet exposure
+- Sysmon
 
----
+https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon
 
-# 6. Log Source Strategy
-
-Logs are the **foundation of SOC detection capability**.
-
-Essential log sources include:
-
-### Endpoint
+### Data collected
 
 - process creation
-- file modifications
-- registry activity
 - command execution
+- registry changes
+- file creation
+- network connections
 
-Tools:
+### Practical Use Case
 
-- EDR platforms
-- Sysmon
-- endpoint agents
+Detect **malicious PowerShell execution**
 
----
+```
+EventID 1 (Process Creation)
+process = powershell.exe
+command_line contains downloadstring
+```
 
-### Network
+Mapped to:
 
-Network monitoring detects:
+MITRE ATT&CK
 
-- command & control
-- lateral movement
-- reconnaissance
-
-Tools:
-
-- IDS/IPS
-- packet inspection
-- DNS monitoring
-- NetFlow
+T1059 — Command and Scripting Interpreter
 
 ---
 
-### Cloud
+## Network Telemetry
 
-Cloud visibility is critical.
+Tools
 
-Monitor:
+- Zeek
 
-- API calls
-- IAM activity
-- configuration changes
+[https://zeek.org](https://zeek.org/)
 
-Examples:
+- Suricata
+
+[https://suricata.io](https://suricata.io/)
+
+- NetFlow / Firewall logs
+
+### Data collected
+
+- DNS queries
+- HTTP requests
+- TLS fingerprints
+- network connections
+
+### Practical Use Case
+
+Detect **command and control communication**
+
+Example detection:
+
+```
+DNS query to known malicious domain
+OR
+Beaconing traffic pattern
+```
+
+MITRE ATT&CK
+
+T1071 — Application Layer Protocol
+
+---
+
+## Cloud Telemetry
+
+For cloud infrastructure, API logs are critical.
+
+### AWS Logs
 
 - AWS CloudTrail
-- Azure Activity Logs
-- GCP audit logs
+
+• VPC Flow Logs
+
+• GuardDuty findings
+
+Docs
+
+https://docs.aws.amazon.com/awscloudtrail
+
+### Example Use Case
+
+Detect **privilege escalation**
+
+```
+eventName = AttachUserPolicy
+policy = AdministratorAccess
+```
+
+MITRE ATT&CK
+
+T1078 — Valid Accounts
 
 ---
 
-### Identity
+## Identity Telemetry
 
-Identity logs are one of the **most valuable data sources**.
+Identity is often the **primary attack vector**.
 
-Monitor:
-
-- authentication failures
-- privilege escalation
-- new admin creation
-- MFA events
-
-Sources:
+Sources
 
 - Active Directory
-- SSO providers
-- VPN logs
+- Okta
+- Azure AD
+- VPN authentication logs
+
+Example detection
+
+```
+Multiple failed logins
+followed by successful login
+from new country
+```
+
+MITRE ATT&CK
+
+T1110 — Brute Force
 
 ---
 
-# 7. Log Collection Strategy
+# 2. Log Pipeline (Data Engineering Layer)
 
-Logs must be **centralized for analysis**.
+Logs must be **processed before reaching SIEM**.
 
-Methods include:
-
-- agent-based log forwarding
-- syslog forwarding
-- API log ingestion
-- cloud log streaming
-
-Logs should be transported securely.
-
-Best practices:
-
-- encrypted log transport
-- reliable delivery
-- centralized ingestion layer
-
----
-
-# 8. Log Pipeline Architecture
-
-Raw logs are noisy and inconsistent.
-
-A log pipeline performs:
-
-- parsing
-- normalization
-- enrichment
-- filtering
-- routing
-
-Typical pipeline tools:
-
-- Logstash
-- Fluentd
-- Vector
-- Kafka
-
-Example flow:
+Typical pipeline architecture
 
 ```
 Log Sources
-     ↓
-Log Collector
-     ↓
-Parser
-     ↓
+   ↓
+Log Forwarder
+   ↓
+Log Parser
+   ↓
+Normalization
+   ↓
 Enrichment
-     ↓
+   ↓
 SIEM
 ```
 
----
+Recommended tools
 
-# 9. Log Normalization
+Vector
 
-Logs from different systems use **different formats**.
+[https://vector.dev](https://vector.dev/)
 
-Normalization converts logs into **standard schema**.
+Fluentd
 
-Common fields:
+[https://www.fluentd.org](https://www.fluentd.org/)
 
-- timestamp
-- source IP
-- destination IP
-- username
-- process name
-- event type
+Logstash
 
-Benefits:
+https://www.elastic.co/logstash
 
-- easier search
-- better correlation
-- improved detection rules
+Kafka (for high scale)
 
 ---
 
-# 10. Log Enrichment
+## Pipeline Enrichment Example
 
-Enrichment adds **context to logs**.
-
-Examples:
-
-- GeoIP location
-- asset criticality
-- threat intelligence matches
-- user identity mapping
-
-Example:
+Add threat intel context.
 
 ```
-IP Address: 185.220.101.10
-Country: Germany
-Reputation: Known Tor Exit Node
+Incoming Log
+IP = 185.220.101.10
+
+Enrichment
+GeoIP → Germany
+Reputation → Tor Exit Node
+ThreatIntel → Known malicious
 ```
 
-This context helps analysts quickly understand risk.
+Result
+
+SOC analysts see **risk context immediately**.
 
 ---
 
-# 11. SIEM Platform
+# 3. SIEM Layer (Central Analysis Engine)
 
-The SIEM is the **central nervous system of the SOC**.
-
-Capabilities include:
+SIEM responsibilities
 
 - log storage
 - correlation rules
@@ -353,350 +288,378 @@ Capabilities include:
 - dashboards
 - investigations
 
-Common SIEM platforms:
+Popular SIEM platforms
 
-- Splunk
-- Elastic Security
-- Microsoft Sentinel
-- QRadar
+| SIEM | Link |
+| --- | --- |
+| Splunk | [https://www.splunk.com](https://www.splunk.com/) |
+| Elastic Security | https://www.elastic.co/security |
+| Microsoft Sentinel | https://learn.microsoft.com/en-us/azure/sentinel |
 
 ---
 
-# 12. Detection Engineering
+## Example Detection Rule
 
-Detection engineering is the **core capability of a modern SOC**.
+Detect suspicious lateral movement.
 
-Instead of relying on vendor alerts, teams build **custom detections**.
+```
+source host A
+connects to
+multiple hosts via SMB
 
-Detection methods include:
+within 1 minute
+```
 
-- rule-based detection
-- behavioral detection
-- anomaly detection
+Mapped to
 
-Detections should map to **attack techniques**.
+MITRE ATT&CK
 
-Example:
+T1021 — Lateral Movement
 
-Detect suspicious PowerShell:
+---
+
+# 4. Detection Engineering Layer
+
+Modern SOCs treat detections as **engineering problems**.
+
+Framework used
+
+MITRE ATT&CK
+
+[https://attack.mitre.org](https://attack.mitre.org/)
+
+Detection format
+
+Sigma rules
+
+[https://sigmahq.io](https://sigmahq.io/)
+
+Example Sigma rule
+
+```
+title: Suspicious PowerShell Download
+
+logsource:
+  product: windows
+
+detection:
+  selection:
+    Image: powershell.exe
+    CommandLine: "*downloadstring*"
+
+condition: selection
+```
+
+Detection coverage should map to **ATT&CK techniques**.
+
+Example coverage table
+
+| Technique | Detection |
+| --- | --- |
+| Credential Dumping | LSASS access |
+| Lateral Movement | SMB admin share |
+| Persistence | scheduled tasks |
+
+---
+
+# 5. Threat Intelligence Integration
+
+Threat intelligence improves **alert context and prioritization**.
+
+Platforms
+
+MISP
+
+[https://www.misp-project.org](https://www.misp-project.org/)
+
+OpenCTI
+
+[https://www.opencti.io](https://www.opencti.io/)
+
+VirusTotal
+
+[https://www.virustotal.com](https://www.virustotal.com/)
+
+---
+
+## Threat Intel Workflow
+
+```
+Alert triggered
+      ↓
+Extract IOC
+(IP / Domain / Hash)
+      ↓
+Query Threat Intel
+      ↓
+Add context
+      ↓
+Prioritize incident
+```
+
+Example enrichment
+
+```
+IP Address: 103.45.67.12
+Campaign: FIN7
+Malware: TrickBot
+Confidence: High
+```
+
+---
+
+# 6. SOAR and Automation
+
+Automation eliminates repetitive analyst tasks.
+
+Tools
+
+Shuffle
+
+[https://shuffler.io](https://shuffler.io/)
+
+n8n
+
+[https://n8n.io](https://n8n.io/)
+
+Cortex XSOAR
+
+https://www.paloaltonetworks.com/cortex/cortex-xsoar
+
+---
+
+## Automated Investigation Workflow
+
+Example playbook
+
+```
+Alert: Suspicious IP detected
+        ↓
+Extract IP
+        ↓
+Check AbuseIPDB
+        ↓
+Check VirusTotal
+        ↓
+Check internal logs
+        ↓
+Create investigation ticket
+```
+
+Automation reduces response time dramatically.
+
+---
+
+# 7. Incident Response Operations
+
+SOC must follow **structured response processes**.
+
+Framework
+
+NIST Incident Response
+
+https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-61r2.pdf
+
+Response lifecycle
+
+```
+Preparation
+      ↓
+Detection
+      ↓
+Analysis
+      ↓
+Containment
+      ↓
+Eradication
+      ↓
+Recovery
+```
+
+Example containment actions
+
+- disable compromised account
+- isolate infected endpoint
+- block malicious domain
+
+---
+
+# 8. Threat Hunting Layer
+
+Threat hunting is proactive security.
+
+Framework
+
+PEAK Threat Hunting Framework
+
+Stages
+
+```
+Prepare
+Execute
+Analyze
+Knowledge
+```
+
+Example hunt
+
+Hypothesis
+
+```
+Attackers may abuse PowerShell
+for lateral movement
+```
+
+Hunting query
 
 ```
 process = powershell.exe
-command_line contains downloadstring
+network connections > 10
+within 60 seconds
 ```
 
 ---
 
-# 13. Detection-as-Code
+# 9. SOC Operational Metrics
 
-Modern SOC teams treat detections as **code artifacts**.
+Metrics measure SOC performance.
 
-Benefits:
+Key SOC KPIs
 
-- version control
-- testing
-- peer review
-- reproducibility
+| Metric | Purpose |
+| --- | --- |
+| MTTD | detection speed |
+| MTTR | response speed |
+| Alert fidelity | alert quality |
+| ATT&CK coverage | detection maturity |
 
-Tools:
-
-- Sigma rules
-- Git repositories
-- CI pipelines
-
-Example workflow:
+Example dashboard
 
 ```
-Write detection rule
-↓
-Test against sample logs
-↓
-Peer review
-↓
-Deploy to SIEM
+MTTD: 12 minutes
+MTTR: 45 minutes
+False positives: 18%
 ```
 
 ---
 
-# 14. Alert Triage
+# 10. Practical Open-Source SOC Stack
 
-SOC analysts must quickly determine:
-
-Is this alert **true positive or false positive**?
-
-Triage process:
-
-1. review alert metadata
-2. examine related logs
-3. analyze user behavior
-4. check asset criticality
-
-If malicious activity is suspected, escalate to **investigation phase**.
-
----
-
-# 15. Incident Investigation
-
-Investigation aims to answer:
-
-- What happened?
-- When did it start?
-- Which systems are affected?
-- What attacker techniques were used?
-
-Analysts examine:
-
-- endpoint activity
-- network connections
-- authentication logs
-- file changes
-
-Investigation tools include:
-
-- SIEM search
-- endpoint telemetry
-- threat intelligence platforms
-
----
-
-# 16. Incident Response Workflow
-
-A standard response process should exist.
-
-Typical workflow:
+Example **realistic open-source SOC**.
 
 ```
-Alert
-↓
-Triage
-↓
-Investigation
-↓
-Containment
-↓
-Eradication
-↓
-Recovery
-↓
-Lessons Learned
+Endpoint Security
+    Wazuh
+
+Network Monitoring
+    Suricata + Zeek
+
+Log Pipeline
+    Vector
+
+SIEM
+    Elastic Security
+
+Threat Intelligence
+    MISP
+
+Automation
+    n8n
 ```
 
-Containment examples:
-
-- disable user account
-- isolate infected host
-- block malicious IP
-
----
-
-# 17. Threat Intelligence Integration
-
-Threat intelligence provides **external context to security events**.
-
-Types of intelligence:
-
-- indicators of compromise (IOCs)
-- malware signatures
-- adversary techniques
-- campaign tracking
-
-Threat intel platforms:
-
-- MISP
-- OpenCTI
-- VirusTotal
-- AbuseIPDB
-
-SOC use cases:
-
-- IOC matching
-- malware attribution
-- alert enrichment
-
----
-
-# 18. Security Automation
-
-Automation reduces analyst workload.
-
-Repetitive tasks should be automated.
-
-Examples:
-
-- IP reputation lookup
-- hash reputation checks
-- ticket creation
-- alert enrichment
-
-Automation tools:
-
-- n8n
-- Shuffle
-- SOAR platforms
-
----
-
-# 19. Automated Playbooks
-
-Playbooks define **automated response workflows**.
-
-Example: Phishing Response
+Deployment architecture
 
 ```
-Alert: suspicious email
-↓
-Extract URLs
-↓
-Check URL reputation
-↓
-Search mailbox logs
-↓
-Quarantine email
-↓
-Notify SOC
+Endpoints → Wazuh Agents
+Network → Suricata Sensors
+Cloud → CloudTrail
+
+          ↓
+
+Vector Pipeline
+
+          ↓
+
+Elastic SIEM
+
+          ↓
+
+n8n Automation
+
+          ↓
+
+SOC Analysts
 ```
 
-Automation speeds up response and reduces manual work.
+This stack can run on **3–4 servers**.
 
 ---
 
-# 20. Threat Hunting
+# 11. Example End-to-End SOC Detection Flow
 
-Threat hunting is **proactive detection**.
+Real attack example:
 
-Instead of waiting for alerts, analysts search for hidden threats.
+### Step 1 — Attacker initial access
 
-Hunting techniques include:
+Phishing email delivered.
 
-- anomaly hunting
-- hypothesis-driven hunting
-- behavioral analysis
-
-Example hypothesis:
-
-"Attackers may use PowerShell for lateral movement."
-
-Search SIEM logs for suspicious PowerShell patterns.
+```
+Email gateway logs event
+```
 
 ---
 
-# 21. SOC Metrics
+### Step 2 — Malware execution
 
-SOC performance must be measurable.
+Endpoint logs
 
-Key metrics include:
-
-MTTD
-
-Mean time to detect threats
-
-MTTR
-
-Mean time to respond
-
-False positive rate
-
-Detection coverage
-
-These metrics guide SOC improvement.
+```
+powershell.exe downloadstring
+```
 
 ---
 
-# 22. SOC Team Structure
+### Step 3 — SIEM detection
 
-Typical SOC roles:
+Detection rule triggers.
 
-### Tier 1 Analyst
-
-Responsibilities:
-
-- alert triage
-- initial investigation
-
-### Tier 2 Analyst
-
-Responsibilities:
-
-- deep investigation
-- incident handling
-
-### Tier 3 Analyst
-
-Responsibilities:
-
-- threat hunting
-- malware analysis
-
-### Detection Engineer
-
-Build detection rules.
-
-### SOC Engineer
-
-Maintain SOC infrastructure.
+```
+Alert created
+```
 
 ---
 
-# 23. SOC Infrastructure
+### Step 4 — SOAR automation
 
-SOC infrastructure must be scalable.
-
-Typical components:
-
-- log storage cluster
-- SIEM nodes
-- automation servers
-- threat intel platform
-- dashboard systems
-
-Infrastructure can be deployed using:
-
-- virtual machines
-- container platforms
-- Kubernetes clusters
+```
+IP reputation lookup
+hash lookup
+threat intel enrichment
+```
 
 ---
 
-# 24. SOC Maturity Model
+### Step 5 — Incident response
 
-SOC maturity evolves through stages.
+SOC analyst
 
-### Level 1
-
-Basic log monitoring
-
-manual analysis
-
-### Level 2
-
-centralized SIEM
-
-structured detection rules
-
-### Level 3
-
-automation
-
-threat intelligence integration
-
-### Level 4
-
-advanced threat hunting
-
-behavior analytics
+```
+isolate host
+disable account
+start investigation
+```
 
 ---
 
-# 25. Continuous Improvement
+# Final Principle
 
-A SOC must constantly improve.
+A practical SOC must focus on **four pillars**
 
-Key improvement methods:
+```
+Visibility
+Detection Engineering
+Automation
+Incident Response
+```
 
-- post-incident reviews
-- detection tuning
-- new threat intelligence
-- red team exercises
-- purple teaming
-
-Every incident should lead to **better detection coverage**.
+Organizations that invest in these capabilities build **resilient, modern SOCs** capable of detecting advanced threats.
