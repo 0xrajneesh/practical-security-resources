@@ -1,88 +1,96 @@
-## Claude Code Security Review Implementation & Operations
+## Claude Code Security Review – Implementation & Operations
 
 ---
 
-# 1. 🎯 Objective
+# 1. Objective
 
-To integrate **AI-based security code review** into the development lifecycle using Claude, in order to:
+To integrate **automated AI-driven security review** into the pull request (PR) workflow in order to:
 
-- Detect vulnerabilities in code changes (PR level)
-- Reduce insecure code in production
-- Assist developers with secure fixes
-- Strengthen DevSecOps maturity
+- Detect vulnerabilities in code changes before merge
+- Enforce secure coding standards
+- Reduce AppSec review effort
+- Provide developers with actionable fixes
 
 ---
 
-# 2. 🧑‍💻 Scope
+# 2. Scope
 
 This procedure applies to:
 
-- All application repositories (backend, frontend, APIs)
-- All pull requests (mandatory scanning)
+- All GitHub repositories (application code)
+- All pull requests targeting protected branches (main, release)
 - All development teams
-- CI/CD pipelines (GitHub-based)
+- CI/CD pipelines using GitHub Actions
 
 ---
 
-# 3. 🏗️ Architecture Overview
+# 3. Roles & Responsibilities
 
-## 🔄 Workflow
+## 3.1 AppSec Team
 
-1. Developer raises Pull Request
-2. GitHub Action triggers Claude Security Review
-3. Code diff is analyzed
-4. Claude identifies:
-    - Vulnerabilities
-    - Misconfigurations
-    - Insecure patterns
-5. Results posted as PR comments
-6. Developer fixes issues
-7. PR approved only after compliance
+- Define security policy (severity thresholds)
+- Monitor findings and trends
+- Tune implementation if needed
+- Audit effectiveness
+
+## 3.2 Development Team
+
+- Fix vulnerabilities identified in PR
+- Follow secure coding practices
+- Do not bypass security checks
+
+## 3.3 DevOps Team
+
+- Implement GitHub Actions
+- Maintain secrets and pipeline integrity
+- Enforce branch protection rules
 
 ---
 
-# 4. ⚙️ Prerequisites
+# 4. Prerequisites
 
 ## 4.1 Access Requirements
 
-- GitHub repository access (Admin/Maintainer)
-- Anthropic API Key
+- GitHub repository admin access
+- Anthropic API key
 
 ---
 
-## 4.2 Secrets Configuration
+## 4.2 Store API Key
 
-Store API key securely in GitHub:
-
-```
-Settings → Secrets → Actions → New Repository Secret
-```
-
-**Key Name:**
+Navigate to:
 
 ```
-ANTHROPIC_API_KEY
+Repository → Settings → Secrets → Actions → New Repository Secret
+```
+
+Add:
+
+```
+Name: ANTHROPIC_API_KEY
+Value: <your_api_key>
 ```
 
 ---
 
-## 4.3 Repository Readiness
+## 4.3 Branch Protection Setup
 
-Ensure:
+Enable for `main` branch:
 
-- Code is version controlled
-- PR workflow is enabled
-- Branch protection rules exist
-
----
-
-# 5. 🚀 Implementation Steps
+- Require pull request before merge
+- Require status checks:
+    - `Claude Security Review`
+- Restrict direct pushes
 
 ---
 
-## Step 1: Create GitHub Action
+# 5. Implementation Procedure
 
-Create file:
+---
+
+## Step 1: Create Workflow File
+
+Create:
 
 ```
 .github/workflows/claude-security-review.yml
@@ -90,7 +98,7 @@ Create file:
 
 ---
 
-## Step 2: Add Configuration
+## Step 2: Add Base Configuration
 
 ```
 name: Claude Security Review
@@ -104,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Run Claude Security Review
@@ -115,303 +123,501 @@ jobs:
 
 ---
 
-## Step 3: Enable Branch Protection
+## Step 3: Optional – Restrict to Specific Paths
 
-Configure:
+To scan only critical code (e.g., backend):
 
-- Require pull request reviews
-- Require status checks to pass:
-    - ✅ Claude Security Review
+```
+on:
+  pull_request:
+    paths:
+      -"backend/**"
+      -"api/**"
+```
 
 ---
 
-## Step 4: Define Policy (Mandatory)
+## Step 4: Optional – Ignore Non-Sensitive Files
+
+```
+on:
+  pull_request:
+    paths-ignore:
+      -"*.md"
+      -"docs/**"
+      -"README.md"
+```
+
+---
+
+## Step 5: Enforce Policy in Workflow
+
+Example: Fail build if high severity issues detected
+
+```
+env:
+  FAIL_ON_SEVERITY:"high"
+```
+
+(Depending on customization support in your wrapper implementation)
+
+---
+
+# 6. Execution Flow (Runtime)
+
+---
+
+## 6.1 Developer Action
+
+Developer submits PR:
+
+```
+# vulnerable code example
+query="SELECT * FROM users WHERE username = '"+username+"'"
+```
+
+---
+
+## 6.2 Pipeline Execution
+
+- GitHub Action triggers
+- Diff is extracted
+- Sent to Claude for analysis
+
+---
+
+## 6.3 Output in PR
+
+Claude posts inline comment:
+
+```
+SQL Injection Vulnerability Detected
+
+Description:
+User-controlled input is concatenated into SQL query.
+
+Severity:
+High
+
+Recommended Fix:
+Use parameterized queries.
+```
+
+---
+
+## 6.4 Developer Remediation
+
+Fix applied:
+
+```
+cursor.execute(
+"SELECT * FROM users WHERE username = %s",
+    (username,)
+)
+```
+
+---
+
+## 6.5 Re-run Pipeline
+
+- Action re-triggers
+- If no high issues → PR can proceed
+
+---
+
+# 7. Practical Use Cases with Code
+
+---
+
+# 7.1 SQL Injection Detection
+
+## Vulnerable Code
+
+```
+defget_user(username):
+query="SELECT * FROM users WHERE username = '"+username+"'"
+returndb.execute(query)
+```
+
+---
+
+## Secure Version
+
+```
+defget_user(username):
+query="SELECT * FROM users WHERE username = %s"
+returndb.execute(query, (username,))
+```
+
+---
+
+# 7.2 Command Injection
+
+## Vulnerable Code
+
+```
+importos
+
+defping_host(host):
+os.system("ping "+host)
+```
+
+---
+
+## Secure Version
+
+```
+importsubprocess
+
+defping_host(host):
+subprocess.run(["ping",host],check=True)
+```
+
+---
+
+# 7.3 Hardcoded Secrets
+
+## Vulnerable Code
+
+```
+SECRET_KEY="mysecret123"
+```
+
+---
+
+## Secure Version
+
+```
+importos
+
+SECRET_KEY=os.getenv("SECRET_KEY")
+```
+
+---
+
+# 7.4 Insecure File Handling
+
+## Vulnerable Code
+
+```
+file=open(user_input,"r")
+data=file.read()
+```
+
+---
+
+## Secure Version
+
+```
+importos
+
+BASE_DIR="/safe_directory/"
+
+file_path=os.path.join(BASE_DIR,user_input)
+
+ifnotfile_path.startswith(BASE_DIR):
+raiseException("Invalid path")
+
+withopen(file_path,"r")asfile:
+data=file.read()
+```
+
+---
+
+# 7.5 Broken Authentication Logic
+
+## Vulnerable Code
+
+```
+ifrequest.user.is_admin:
+allow_access()
+```
+
+---
+
+## Secure Version
+
+```
+ifrequest.user.is_authenticatedandrequest.user.role=="admin":
+ifnotrequest.session.is_valid:
+deny_access()
+else:
+allow_access()
+```
+
+---
+
+# 8. Advanced Configuration
+
+---
+
+## 8.1 Multi-Job Pipeline Integration
+
+```
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+  security-review:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anthropics/claude-code-security-review@main
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+---
+
+## 8.2 Combine with SAST
+
+```
+- name: Run Snyk Scan
+  uses: snyk/actions/python@master
+
+- name: Run Claude Security Review
+  uses: anthropics/claude-code-security-review@main
+```
+
+---
+
+## 8.3 Custom Wrapper (Optional)
+
+You can wrap Claude with custom prompts:
+
+```
+defsecurity_review(code_diff):
+prompt=f"""
+    Perform a strict application security review.
+
+    Focus on:
+    - Injection vulnerabilities
+    - Authentication flaws
+    - Secrets exposure
+    - Business logic issues
+
+    Code:
+{code_diff}
+    """
+```
+
+---
+
+# 9. Developer Workflow (Detailed)
+
+---
+
+## Step 1: Write Code
+
+Developer writes feature or fix
+
+---
+
+## Step 2: Run Local Checks (Optional)
+
+Example script:
+
+```
+python local_security_check.py
+```
+
+---
+
+## Step 3: Create PR
+
+- Target branch: main
+- Add description
+
+---
+
+## Step 4: Automated Security Review
+
+- Claude analyzes diff
+- Comments appear in PR
+
+---
+
+## Step 5: Fix Issues
+
+- Address all:
+    - High severity → mandatory
+    - Medium → required before approval
+
+---
+
+## Step 6: Approval & Merge
+
+- All checks pass
+- Reviewers approve
+- PR merged
+
+---
+
+# 10. AppSec Operational Procedures
+
+---
+
+## 10.1 Daily Monitoring
+
+- Review flagged vulnerabilities
+- Check repeated patterns
+
+---
+
+## 10.2 Weekly Review
+
+Track:
+
+- Top vulnerability types
+- Most affected repos
+- Developer response time
+
+---
+
+## 10.3 Example Metrics Script
+
+```
+importjson
+
+defcount_vulnerabilities(reports):
+summary= {"high":0,"medium":0,"low":0}
+
+forrinreports:
+summary[r["severity"]]+=1
+
+returnsummary
+```
+
+---
+
+# 11. Security Policies
+
+---
+
+## 11.1 Severity Handling
 
 | Severity | Action |
 | --- | --- |
 | High | Block merge |
-| Medium | Fix before approval |
-| Low | Optional / backlog |
+| Medium | Must fix |
+| Low | Optional |
 
 ---
 
-# 6. 🧩 Operational Use Cases
+## 11.2 Merge Conditions
+
+PR must NOT be merged if:
+
+- High severity issue exists
+- Security review has not completed
 
 ---
 
-## 6.1 Injection Vulnerabilities
-
-### Example Trigger
-
-```
-query="SELECT * FROM users WHERE id="+user_input
-```
-
-### Expected Detection
-
-- SQL Injection (High severity)
-
-### Action
-
-- Replace with parameterized queries
+# 12. Limitations & Controls
 
 ---
 
-## 6.2 Command Injection
+## 12.1 Known Limitations
 
-### Example
-
-```
-os.system("ping "+user_input)
-```
-
-### Action
-
-- Replace with safe subprocess usage
+- May miss multi-file logic issues
+- May not fully understand business context
+- Dependent on code diff quality
 
 ---
 
-## 6.3 Hardcoded Secrets
+## 12.2 Risk Mitigation
 
-### Example
-
-```
-API_KEY="12345"
-```
-
-### Action
-
-- Move to environment variables or vault
+- Combine with:
+    - SAST tools
+    - Manual review
+    - Threat modeling
 
 ---
 
-## 6.4 Broken Authentication / Authorization
+# 13. Best Practices
 
-### Example
+---
+
+## 13.1 Keep Reviews Focused
+
+- Analyze diffs, not entire repo
+
+---
+
+## 13.2 Do Not Blindly Trust Output
+
+- Validate critical findings manually
+
+---
+
+## 13.3 Train Developers
+
+- Teach:
+    - OWASP Top 10
+    - Secure coding
+    - Reading security feedback
+
+---
+
+## 13.4 Secure Secrets
+
+- Use vaults / secret managers
+- Rotate API keys regularly
+
+---
+
+# 14. Example End-to-End Scenario
+
+---
+
+## PR Contains
 
 ```
-ifuser.is_admin:
+password=input("Enter password: ")
+ifpassword=="admin123":
 grant_access()
 ```
 
-### Action
-
-- Add:
-    - Token validation
-    - Role verification
-    - Session checks
-
 ---
 
-## 6.5 Insecure Input Handling
-
-### Example
+## Claude Finding
 
 ```
-email=request.GET['email']
-```
+Hardcoded Credential Detected
 
-### Action
+Risk:
+Authentication bypass
 
-- Add validation:
-    - Format checks
-    - Length limits
-    - Sanitization
-
----
-
-# 7. 🔄 Developer Workflow
-
----
-
-## Step 1: Code Development
-
-- Developer writes feature code
-
----
-
-## Step 2: Raise Pull Request
-
-- PR triggers Claude review automatically
-
----
-
-## Step 3: Review Findings
-
-Claude posts:
-
-- Vulnerability description
-- Severity
-- Suggested fix
-
----
-
-## Step 4: Remediation
-
-Developer must:
-
-- Fix all **High/Medium issues**
-- Re-push code
-
----
-
-## Step 5: Approval
-
-- Security + code reviewers approve
-- Merge allowed only if:
-    - No critical issues remain
-
----
-
-# 8. 🔍 AppSec Team Responsibilities
-
----
-
-## 8.1 Monitoring
-
-- Review:
-    - Frequent vulnerabilities
-    - Repeat issues
-- Identify:
-    - Training gaps
-
----
-
-## 8.2 Rule Tuning
-
-- Adjust:
-    - Sensitivity
-    - Context prompts (if applicable)
-
----
-
-## 8.3 Reporting
-
-Generate weekly:
-
-- Vulnerability trends
-- Top issues
-- Developer compliance
-
----
-
-# 9. 📊 Metrics to Track
-
-| Metric | Description |
-| --- | --- |
-| Vulnerabilities per PR | Risk exposure |
-| Fix time | Dev responsiveness |
-| False positives | Tool accuracy |
-| Repeat issues | Training gaps |
-| Blocked merges | Policy enforcement |
-
----
-
-# 10. 🔐 Security Best Practices
-
----
-
-## 10.1 Do Not Rely Solely on Claude
-
-Use alongside:
-
-- SAST tools
-- DAST tools
-- Dependency scanners
-
----
-
-## 10.2 Secure API Key Handling
-
-- Never hardcode keys
-- Rotate keys periodically
-
----
-
-## 10.3 Protect Against Prompt Injection
-
-- Avoid:
-    - Passing untrusted input blindly
-- Validate PR content context
-
----
-
-# 11. ⚠️ Limitations
-
-- May miss:
-    - Multi-file logic flaws
-- Depends on:
-    - Code context quality
-- Not a replacement for:
-    - Manual security reviews
-
----
-
-# 12. 🧠 Best Practices for Teams
-
----
-
-## 12.1 Shift Left
-
-- Encourage developers to:
-    - Think security early
-    - Fix before PR
-
----
-
-## 12.2 Standardize Prompts (Optional Enhancement)
-
-Example:
-
-```
-Act as a senior AppSec engineer.
-Focus on:
-- Injection flaws
-- Auth bypass
-- Secrets exposure
-- Logic vulnerabilities
+Fix:
+Use secure authentication mechanism and hashed passwords
 ```
 
 ---
 
-## 12.3 Train Developers
+## Fixed Code
 
-- Common vulnerabilities
-- Secure coding practices
-- Reading Claude outputs
+```
+importbcrypt
 
----
-
-# 13. 🚀 Advanced Enhancements
-
----
-
-## 13.1 CI/CD Enforcement
-
-- Block deployment if:
-    - Critical issues exist
+defverify_password(input_password,stored_hash):
+returnbcrypt.checkpw(input_password.encode(),stored_hash)
+```
 
 ---
 
-## 13.2 Integration with SIEM
+# 15. Conclusion
 
-- Map:
-    - Code vulnerabilities → runtime detections
+Claude Code Security Review should be used as:
 
----
+- A **PR-level security gate**
+- A **developer assistant for secure coding**
+- A **DevSecOps control mechanism**
 
-## 13.3 Secure Coding Templates
+It is most effective when:
 
-- Use Claude to:
-    - Generate secure boilerplate code
-
----
-
-# 14. 🏁 Conclusion
-
-Claude Code Security Review enables:
-
-- Faster vulnerability detection
-- Developer-friendly remediation
-- Reduced AppSec workload
-- Stronger DevSecOps posture
+- Integrated into CI/CD
+- Enforced via branch protection
+- Combined with other security tools
