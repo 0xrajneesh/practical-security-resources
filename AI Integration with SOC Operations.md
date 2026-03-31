@@ -1,8 +1,8 @@
 # **Method of Procedure (MoP): AI Integration with SOC Operations**
 
-Version: 1.0
-Status: Draft
-Author: Rajneesh Gupta
+Version: 1.0    
+Status: Draft    
+Author: Rajneesh Gupta    
 
 ## **1. Objective**
 
